@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/invopop/jsonschema"
@@ -32,11 +33,11 @@ func (p *OpenAICompatibleProvider) Generate(
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("failed to generate: %w", err)
+		return "", fmt.Errorf("[%s] failed to generate: %w", p.name, err)
 	}
 
 	if len(response.Choices) == 0 {
-		return "", fmt.Errorf("no choices returned")
+		return "", fmt.Errorf("[%s] no choices returned", p.name)
 	}
 
 	return response.Choices[0].Message.Content, nil
@@ -47,6 +48,11 @@ func (p *OpenAICompatibleProvider) GenerateStructured(
 	systemPrompt string,
 	userPrompt string,
 	schema *jsonschema.Schema) (string, error) {
+
+	schemaBytes, err := json.Marshal(schema)
+	if err != nil {
+		return "", fmt.Errorf("[%s] failed to marshal schema: %w", p.name, err)
+	}
 
 	response, err := p.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: p.model,
@@ -61,16 +67,21 @@ func (p *OpenAICompatibleProvider) GenerateStructured(
 			},
 		},
 		ResponseFormat: &openai.ChatCompletionResponseFormat{
-			Type: openai.ChatCompletionResponseFormatTypeJSONObject,
+			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   "response",
+				Schema: json.RawMessage(schemaBytes),
+				Strict: true,
+			},
 		},
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("failed to generate structured: %w", err)
+		return "", fmt.Errorf("[%s] failed to generate structured: %w", p.name, err)
 	}
 
 	if len(response.Choices) == 0 {
-		return "", fmt.Errorf("no choices returned")
+		return "", fmt.Errorf("[%s] no choices returned", p.name)
 	}
 
 	return response.Choices[0].Message.Content, nil
