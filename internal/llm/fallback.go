@@ -27,11 +27,15 @@ func (f *FallbackProvider) Generate(
 	ctx context.Context,
 	systemPrompt string,
 	userPrompt string) (string, error) {
-	response, err := f.primary.Generate(ctx, systemPrompt, userPrompt)
-	if err != nil {
-		_, err2 := f.secondary.Generate(ctx, systemPrompt, userPrompt)
+
+	var response string
+	var err1, err2 error
+
+	response, err1 = f.primary.Generate(ctx, systemPrompt, userPrompt)
+	if err1 != nil {
+		response, err2 = f.secondary.Generate(ctx, systemPrompt, userPrompt)
 		if err2 != nil {
-			return "", fmt.Errorf("both providers failed — primary: %w, secondary: %v", err, err2)
+			return "", fmt.Errorf("both providers failed — primary: %w, secondary: %w", err1, err2)
 		}
 	}
 
@@ -43,9 +47,16 @@ func (f *FallbackProvider) GenerateStructured(
 	systemPrompt string,
 	userPrompt string,
 	schema *jsonschema.Schema) (string, error) {
-	response, err := f.primary.GenerateStructured(ctx, systemPrompt, userPrompt, schema)
-	if err != nil {
-		f.secondary.GenerateStructured(ctx, systemPrompt, userPrompt, schema)
+
+	var response string
+	var err1, err2 error
+
+	response, err1 = f.primary.GenerateStructured(ctx, systemPrompt, userPrompt, schema)
+	if err1 != nil {
+		response, err2 = f.secondary.GenerateStructured(ctx, systemPrompt, userPrompt, schema)
+		if err2 != nil {
+			return "", fmt.Errorf("both providers failed — primary: %w, secondary: %w", err1, err2)
+		}
 	}
 	return response, nil
 }
