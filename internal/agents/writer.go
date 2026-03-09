@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -32,6 +33,8 @@ func (w *WriterAgent) Write(ctx context.Context, query string, results []models.
 	schema := jsonschema.Reflect(&models.ReportData{})
 	var writerUserPrompt strings.Builder
 
+	fmt.Fprintf(&writerUserPrompt, "Original query: %s\n\n", query)
+	fmt.Fprintf(&writerUserPrompt, "Summarized search results:\n\n")
 	for _, sr := range results {
 		fmt.Fprintf(
 			&writerUserPrompt,
@@ -41,9 +44,14 @@ func (w *WriterAgent) Write(ctx context.Context, query string, results []models.
 	}
 
 	result, err := w.provider.GenerateStructured(ctx, writerSystemPrompt, writerUserPrompt.String(), schema)
-
 	if err != nil {
-		return nil, fmt.Errorf("writer failed to generate report: %w", err)
+		return nil, fmt.Errorf("failed to generate report: %w", err)
 	}
 
+	var reportData models.ReportData
+	if err = json.Unmarshal([]byte(result), &reportData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal report: %w", err)
+	}
+
+	return &reportData, nil
 }

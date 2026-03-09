@@ -1,4 +1,4 @@
-package tools
+package agents
 
 import (
 	"context"
@@ -6,14 +6,15 @@ import (
 
 	"github.com/sanjbh/deepforge/internal/llm"
 	"github.com/sanjbh/deepforge/internal/models"
+	"github.com/sanjbh/deepforge/internal/tools"
 )
 
 type EmailAgent struct {
 	provider llm.Provider
-	sender   *EmailSender
+	sender   tools.EmailSender
 }
 
-func NewEmailAgent(provider llm.Provider, sender *EmailSender) *EmailAgent {
+func NewEmailAgent(provider llm.Provider, sender tools.EmailSender) *EmailAgent {
 	return &EmailAgent{provider: provider, sender: sender}
 }
 
@@ -23,7 +24,7 @@ const emailerSystemPrompt = `
 	no additional commentary.
 `
 
-func (e *EmailAgent) Send(ctx context.Context, report models.ReportData) error {
+func (e *EmailAgent) Send(ctx context.Context, report *models.ReportData) error {
 	userPrompt := fmt.Sprintf(
 		`Please convert the following markdown report into clean, well presented HTML.\n
 				Return only the HTML body content, no additional commentary.\n\n%s`,
@@ -34,7 +35,9 @@ func (e *EmailAgent) Send(ctx context.Context, report models.ReportData) error {
 		return fmt.Errorf("failed to generate HTML body: %w", err)
 	}
 
-	if err := e.sender.Send(report.ShortSummary, htmlBody); err != nil {
+	subjectLine := fmt.Sprintf("Research Report: %s", report.ShortSummary)
+
+	if err := e.sender.Send(subjectLine, htmlBody); err != nil {
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 	return nil
