@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/invopop/jsonschema"
@@ -9,9 +10,9 @@ import (
 	"github.com/sanjbh/deepforge/internal/models"
 )
 
-const systemPrompt = `
+const plannerSystemPromptTemplate = `
 	You are a helpful research assistant. Given a query, come up with a set of web searches to perform to best answer the query. 
-	Output {N} search terms to query for.
+	Output %d search terms to query for.
 `
 
 type PlannerAgent struct {
@@ -28,12 +29,19 @@ func NewPlannerAgent(provider llm.Provider, howManySearches int) *PlannerAgent {
 
 func (p *PlannerAgent) Plan(ctx context.Context, query string) (*models.WebSearchPlan, error) {
 	schema := jsonschema.Reflect(&models.WebSearchPlan{})
-	userPrompt := fmt.Sprintf("Query: %s, Generate %s searches", query, p.howManySearches)
+	userPrompt := fmt.Sprintf("Query: %s, Generate %d searches", query, p.howManySearches)
 
-	plan, err := p.provider.GenerateStructured(ctx, systemPrompt, userPrompt, schema)
+	plannerSystemPrompt := fmt.Sprintf(plannerSystemPromptTemplate, p.howManySearches)
+	plan, err := p.provider.GenerateStructured(ctx, plannerSystemPrompt, userPrompt, schema)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("planner failed to generate search plan: %w", err)
 	}
 
-	return jsonschema.Unmarshal(plan, schema)
+	var webSearchPlan models.WebSearchPlan
+	err = json.Unmarshal([]byte(plan), &webSearchPlan)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal web search plan: %w", err)
+	}
+
+	return &webSearchPlan, nil
 }
