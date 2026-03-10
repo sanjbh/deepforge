@@ -8,12 +8,12 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-const (
+/*const (
 	BaseURLGemini = "https://generativelanguage.googleapis.com/v1beta/openai/"
 	BaseURLOllama = "http://localhost:11434/v1"
 	BaseURLGroq   = "https://api.groq.com/openai/v1"
 	BaseURLOpenAI = "https://api.openai.com/v1"
-)
+)*/
 
 // Provider is the interface every agent programs against.
 // Gemini and Ollama are both hidden behind this boundary.

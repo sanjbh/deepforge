@@ -13,7 +13,7 @@ type SendGridEmailSender struct {
 	toEmail   string
 }
 
-func NewSendgridEmailSender(apiKey string, fromEmail string, toEmail string) *SendGridEmailSender {
+func NewSendGridEmailSender(apiKey string, fromEmail string, toEmail string) *SendGridEmailSender {
 	return &SendGridEmailSender{apiKey: apiKey, fromEmail: fromEmail, toEmail: toEmail}
 }
 

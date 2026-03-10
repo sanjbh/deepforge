@@ -9,11 +9,11 @@ import (
 
 type Config struct {
 	//LLM
-	GeminiAPIKey    string `mapstructure:"GEMINI_API_KEY" validate:"required,min=20"`
-	GeminiModel     string `mapstructure:"GEMINI_MODEL" validate:"required"`
-	OllamaBaseModel string `mapstructure:"OLLAMA_BASE_MODEL" validate:"required"`
-	OllamaModel     string `mapstructure:"OLLAMA_MODEL" validate:"required"`
-
+	GeminiAPIKey  string `mapstructure:"GEMINI_API_KEY" validate:"required,min=20"`
+	GeminiModel   string `mapstructure:"GEMINI_MODEL" validate:"required"`
+	OllamaModel   string `mapstructure:"OLLAMA_MODEL" validate:"required"`
+	GeminiBaseURL string `mapstructure:"GEMINI_BASE_URL" validate:"required,url"`
+	OllamaBaseURL string `mapstructure:"OLLAMA_BASE_URL" validate:"required,url"`
 	//Search
 	HowManySearches int `mapstructure:"HOW_MANY_SEARCHES" validate:"required,min=1,max=10"`
 
@@ -26,11 +26,28 @@ type Config struct {
 	ServiceName    string `mapstructure:"SERVICE_NAME" validate:"required"`
 	ServiceVersion string `mapstructure:"SERVICE_VERSION" validate:"required"`
 	LogLevel       string `mapstructure:"LOG_LEVEL" validate:"required"`
+	OTLPEndpoint   string `mapstructure:"OTLP_ENDPOINT" validate:"required"`
 }
 
 func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
+
+	// Explicitly bind each env var — required for viper to map
+	// env vars to struct fields via mapstructure tags
+	viper.BindEnv("GEMINI_API_KEY")
+	viper.BindEnv("GEMINI_MODEL")
+	viper.BindEnv("GEMINI_BASE_URL")
+	viper.BindEnv("OLLAMA_BASE_URL")
+	viper.BindEnv("OLLAMA_MODEL")
+	viper.BindEnv("HOW_MANY_SEARCHES")
+	viper.BindEnv("SENDGRID_API_KEY")
+	viper.BindEnv("FROM_EMAIL")
+	viper.BindEnv("TO_EMAIL")
+	viper.BindEnv("SERVICE_NAME")
+	viper.BindEnv("SERVICE_VERSION")
+	viper.BindEnv("LOG_LEVEL")
+	viper.BindEnv("OTLP_ENDPOINT")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

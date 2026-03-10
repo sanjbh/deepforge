@@ -1,0 +1,64 @@
+services:
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: deepforge-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+    ports:
+      - "4318:4318"   # OTLP HTTP receiver — deepforge sends traces here
+      - "3200:3200"   # Tempo API — queried by Grafana
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3200/ready || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: deepforge-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      tempo:
+        condition: service_healthy
+
+  deepforge:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: deepforge-app
+    environment:
+      # LLM
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - GEMINI_BASE_URL=${GEMINI_BASE_URL}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+      # Search
+      - HOW_MANY_SEARCHES=${HOW_MANY_SEARCHES}
+      # Email
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - FROM_EMAIL=${FROM_EMAIL}
+      - TO_EMAIL=${TO_EMAIL}
+      # Observability
+      - SERVICE_NAME=${SERVICE_NAME}
+      - SERVICE_VERSION=${SERVICE_VERSION}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - OTLP_ENDPOINT=tempo:4318   # ← service name, not localhost
+      # Query
+      # - DEEPFORGE_QUERY=${DEEPFORGE_QUERY}
+      - DEEPFORGE_QUERY=Learn async Rust
+    volumes:
+      - ../emails:/app/emails      # mount emails output directory
+    depends_on:
+      tempo:
+        condition: service_healthy

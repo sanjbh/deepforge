@@ -12,7 +12,7 @@ type FallbackProvider struct {
 	secondary Provider
 }
 
-func NewFallbackProvider(primary, secondary Provider) *FallbackProvider {
+func NewFallbackProvider(primary, secondary Provider) Provider {
 	return &FallbackProvider{
 		primary:   primary,
 		secondary: secondary,
