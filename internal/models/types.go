@@ -24,8 +24,8 @@ type ReportData struct {
 // The Query field gives the WriterAgent richer context than
 // a raw string slice would.
 type SearchResult struct {
-	Query   string `json:"query"`
-	Summary string `json:"summary"`
+	Query   string `json:"query" jsonschema:"description=Why this search is important,example=To understand recent developments"`
+	Summary string `json:"summary" jsonschema:"description=The exact search term to use,example=latest AI agent frameworks 2025"`
 }
 
 // AgentError wraps errors with the agent name for clean observability.

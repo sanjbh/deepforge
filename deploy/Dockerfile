@@ -9,7 +9,10 @@ FROM alpine:latest
 ENV DEEPFORGE_QUERY="default research topic"
 RUN apk --no-cache add ca-certificates
 
+RUN addgroup -S deepforge && adduser -S deepforge -G deepforge
+RUN mkdir -p /app/emails && chown -R deepforge:deepforge /app/emails
+
+USER deepforge
 WORKDIR /app
 COPY --from=builder /app/deepforge ./
-# CMD ./deepforge -query="${DEEPFORGE_QUERY}"
 CMD ["/bin/sh", "-c", "./deepforge -query=\"${DEEPFORGE_QUERY}\""]

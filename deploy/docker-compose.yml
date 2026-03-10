@@ -15,6 +15,24 @@ services:
       retries: 20
       start_period: 30s
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: deepforge-mailhog
+    ports:
+      - "1025:1025"   # SMTP — your app sends emails here
+      - "8025:8025"   # Web UI — view captured emails in browser
+    restart: unless-stopped
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    environment:
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:latest
     container_name: deepforge-grafana
@@ -45,10 +63,14 @@ services:
       - OLLAMA_MODEL=${OLLAMA_MODEL}
       # Search
       - HOW_MANY_SEARCHES=${HOW_MANY_SEARCHES}
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL}
+      - RESULTS_PER_SEARCH=${RESULTS_PER_SEARCH}
       # Email
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
       - FROM_EMAIL=${FROM_EMAIL}
       - TO_EMAIL=${TO_EMAIL}
+      - MAILHOG_HOST=${MAILHOG_HOST}      # ← missing
+      - MAILHOG_PORT=${MAILHOG_PORT}      # ← missing
       # Observability
       - SERVICE_NAME=${SERVICE_NAME}
       - SERVICE_VERSION=${SERVICE_VERSION}
@@ -62,3 +84,5 @@ services:
     depends_on:
       tempo:
         condition: service_healthy
+      searxng:
+        condition: service_started

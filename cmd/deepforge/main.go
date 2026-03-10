@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"os"
 
 	"github.com/sanjbh/deepforge/config"
 	"github.com/sanjbh/deepforge/internal/agents"
@@ -18,7 +19,7 @@ import (
 func main() {
 	var query string
 
-	flag.StringVar(&query, "query", "", "research query")
+	flag.StringVar(&query, "query", os.Getenv("DEEPFORGE_QUERY"), "research query")
 	flag.Parse()
 
 	if query == "" {
@@ -44,7 +45,7 @@ func main() {
 		cfg.OTLPEndpoint)
 
 	if err != nil {
-		logger.Fatal("failed to create tracer: %v", zap.Error(err))
+		logger.Fatal("failed to create tracer: %w", zap.Error(err))
 	}
 	defer shutdown()
 
@@ -73,13 +74,16 @@ func main() {
 
 	provider := llm.NewFallbackProvider(gemini, ollama)
 
-	searchClient := search.NewDuckDuckGoClient()
+	searchClient := search.NewSearXNGClient(cfg.SearXNGBaseURL, cfg.ResultsPerSearch)
 
 	var sender tools.EmailSender
 
-	if cfg.EmailEnabled() {
+	switch {
+	case cfg.EmailEnabled():
 		sender = tools.NewSendGridEmailSender(cfg.SendGridAPIKey, cfg.FromEmail, cfg.ToEmail)
-	} else {
+	case cfg.MailHogEnabled():
+		sender = tools.NewMailHogEmailSender(cfg.MailhogHost, cfg.MailhogPort, cfg.FromEmail, cfg.ToEmail)
+	default:
 		sender = tools.NewFileEmailSender("emails")
 	}
 

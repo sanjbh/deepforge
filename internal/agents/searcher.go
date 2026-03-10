@@ -14,11 +14,11 @@ import (
 
 type SearchAgent struct {
 	provider     llm.Provider
-	searchClient *search.DuckDuckGoClient
+	searchClient *search.SearXNGClient
 	obs          *observability.Observability
 }
 
-func NewSearchAgent(provider llm.Provider, searchClient *search.DuckDuckGoClient, obs *observability.Observability) *SearchAgent {
+func NewSearchAgent(provider llm.Provider, searchClient *search.SearXNGClient, obs *observability.Observability) *SearchAgent {
 	return &SearchAgent{
 		provider:     provider,
 		searchClient: searchClient,

@@ -14,8 +14,21 @@ import (
 )
 
 const plannerSystemPromptTemplate = `
-	You are a helpful research assistant. Given a query, come up with a set of web searches to perform to best answer the query. 
-	Output %d search terms to query for.
+	You are a helpful research assistant. Given a topic, generate exactly %d web search queries to thoroughly research it.
+
+	You MUST respond with valid JSON only. No explanation, no markdown, no code blocks.
+
+	Each search item MUST have:
+	- "reason": why this search is important
+	- "query": the exact non-empty search term to use (this field must never be empty)
+
+	Example output:
+	{
+	"searches": [
+		{"reason": "Get an overview of the topic", "query": "async Rust programming basics"},
+		{"reason": "Find advanced patterns", "query": "async Rust tokio advanced patterns 2025"}
+	]
+	}
 `
 
 type PlannerAgent struct {

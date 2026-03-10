@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
@@ -15,12 +16,17 @@ type Config struct {
 	GeminiBaseURL string `mapstructure:"GEMINI_BASE_URL" validate:"required,url"`
 	OllamaBaseURL string `mapstructure:"OLLAMA_BASE_URL" validate:"required,url"`
 	//Search
-	HowManySearches int `mapstructure:"HOW_MANY_SEARCHES" validate:"required,min=1,max=10"`
+	HowManySearches  int    `mapstructure:"HOW_MANY_SEARCHES" validate:"required,min=1,max=10"`
+	SearXNGBaseURL   string `mapstructure:"SEARXNG_BASE_URL" validate:"required,url"`
+	ResultsPerSearch int    `mapstructure:"RESULTS_PER_SEARCH" validate:"min=1,max=20"`
+	DeepForgeQuery   string `mapstructure:"DEEPFORGE_QUERY" validate:"required"`
 
 	//Email
 	SendGridAPIKey string `mapstructure:"SENDGRID_API_KEY"`
 	FromEmail      string `mapstructure:"FROM_EMAIL" validate:"required_with=SendGridAPIKey"`
 	ToEmail        string `mapstructure:"TO_EMAIL" validate:"required_with=SendGridAPIKey"`
+	MailhogHost    string `mapstructure:"MAILHOG_HOST"`
+	MailhogPort    int    `mapstructure:"MAILHOG_PORT"`
 
 	//Observability
 	ServiceName    string `mapstructure:"SERVICE_NAME" validate:"required"`
@@ -30,7 +36,6 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
 
 	// Explicitly bind each env var — required for viper to map
@@ -48,12 +53,26 @@ func Load() (*Config, error) {
 	viper.BindEnv("SERVICE_VERSION")
 	viper.BindEnv("LOG_LEVEL")
 	viper.BindEnv("OTLP_ENDPOINT")
+	viper.BindEnv("SEARXNG_BASE_URL")
+	viper.BindEnv("RESULTS_PER_SEARCH")
+	viper.BindEnv("DEEPFORGE_QUERY")
+	viper.BindEnv("MAILHOG_HOST")
+	viper.BindEnv("MAILHOG_PORT")
 
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			fmt.Printf("warning: .env not found, using environment variables\n")
+	if _, err := os.Stat(".env"); err == nil {
+		viper.SetConfigFile(".env")
+		if err := viper.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("failed to read config: %w", err)
 		}
 	}
+
+	/* if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			fmt.Printf("warning: .env not found, using environment variables\n")
+		} else {
+			return nil, fmt.Errorf("failed to read config: %w", err)
+		}
+	} */
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
@@ -69,4 +88,8 @@ func Load() (*Config, error) {
 
 func (c *Config) EmailEnabled() bool {
 	return c.SendGridAPIKey != ""
+}
+
+func (c *Config) MailHogEnabled() bool {
+	return c.MailhogHost != "" && c.MailhogPort != 0
 }
