@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/invopop/jsonschema"
 	"github.com/sashabaranov/go-openai"
@@ -18,7 +19,7 @@ func (p *OpenAICompatibleProvider) Generate(
 	systemPrompt string,
 	userPrompt string) (string, error) {
 
-	response, err := p.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	req := openai.ChatCompletionRequest{
 		Model: p.model,
 		Messages: []openai.ChatCompletionMessage{
 			{
@@ -30,6 +31,14 @@ func (p *OpenAICompatibleProvider) Generate(
 				Content: userPrompt,
 			},
 		},
+	}
+
+	var response openai.ChatCompletionResponse
+
+	err := p.withRetry(ctx, func() error {
+		var e error
+		response, e = p.client.CreateChatCompletion(ctx, req)
+		return e
 	})
 
 	if err != nil {
@@ -54,7 +63,7 @@ func (p *OpenAICompatibleProvider) GenerateStructured(
 		return "", fmt.Errorf("[%s] failed to marshal schema: %w", p.name, err)
 	}
 
-	response, err := p.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+	req := openai.ChatCompletionRequest{
 		Model: p.model,
 		Messages: []openai.ChatCompletionMessage{
 			{
@@ -74,7 +83,15 @@ func (p *OpenAICompatibleProvider) GenerateStructured(
 				Strict: true,
 			},
 		},
+	}
+
+	var response openai.ChatCompletionResponse
+	err = p.withRetry(ctx, func() error {
+		var e error
+		response, e = p.client.CreateChatCompletion(ctx, req)
+		return e
 	})
+	// response, err := p.client.CreateChatCompletion(ctx, req)
 
 	if err != nil {
 		return "", fmt.Errorf("[%s] failed to generate structured: %w", p.name, err)
@@ -85,4 +102,37 @@ func (p *OpenAICompatibleProvider) GenerateStructured(
 	}
 
 	return response.Choices[0].Message.Content, nil
+}
+
+const (
+	maxRetries = 3
+	baseDelay  = 1 * time.Second
+	maxDelay   = 10 * time.Second
+)
+
+func (p *OpenAICompatibleProvider) withRetry(ctx context.Context, fn func() error) error {
+	var err error
+	for attempt := range maxRetries {
+		err = fn()
+		if err == nil {
+			return nil
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		if attempt == maxRetries-1 {
+			return err
+		}
+
+		delay := min(baseDelay*(1<<attempt), maxDelay)
+
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return err
 }

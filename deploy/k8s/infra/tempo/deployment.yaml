@@ -1,0 +1,66 @@
+# tempo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: deepforge
+  labels:
+    app: tempo
+    version: 2.4.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+        version: 2.4.1
+    spec:
+      containers:
+      - name: tempo
+        image: grafana/tempo:2.4.1
+        imagePullPolicy: IfNotPresent
+        args:
+        - "-config.file=/etc/tempo.yaml"
+        ports:
+        - containerPort: 4318
+          name: otlp-http
+          protocol: TCP
+        - containerPort: 3200
+          name: tempo-api
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tempo.yaml
+          subPath: tempo.yaml
+        - name: data
+          mountPath: /tmp/tempo
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 3200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3200
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: tempo-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: tempo-data-pvc
+

@@ -5,6 +5,9 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/sanjbh/deepforge/config"
 	"github.com/sanjbh/deepforge/internal/agents"
@@ -36,7 +39,12 @@ func main() {
 		log.Fatalf("failed to create logger: %v", err)
 	}
 
-	ctx := context.Background()
+	// ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.TODO(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
 
 	tracer, shutdown, err := observability.NewTracer(
 		ctx,

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deepforge-config
+  namespace: deepforge
+  labels:
+    app: deepforge
+    component: config
+data:
+  # LLM — Primary (Gemini)
+  # Note: GEMINI_API_KEY should be provided via Kubernetes Secret
+  GEMINI_MODEL: "gemini-2.0-flash"
+  GEMINI_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  
+  # LLM — Fallback (Ollama)
+  OLLAMA_MODEL: "qwen3:8b-q4_K_M"
+  OLLAMA_BASE_URL: "http://192.168.68.55:11434/v1"
+  
+  # Search Configuration
+  HOW_MANY_SEARCHES: "3"
+  RESULTS_PER_SEARCH: "5"
+  SEARXNG_BASE_URL: "http://searxng-service:8080"
+  
+  # Service Information
+  SERVICE_NAME: "deepforge"
+  SERVICE_VERSION: "0.1.0"
+  
+  # Logging and Observability
+  LOG_LEVEL: "info"
+  OTLP_ENDPOINT: "tempo-service:4318"
+  
+  # Email Configuration
+  # Note: SENDGRID_API_KEY should be provided via Kubernetes Secret if using SendGrid
+  FROM_EMAIL: "deepforge@local.dev"
+  TO_EMAIL: "sanjay@local.dev"
+  MAILHOG_HOST: "mailhog-service"
+  MAILHOG_PORT: "1025"
+  
+  # Pipeline Configuration
+  DEEPFORGE_QUERY: "Latest AI agent frameworks in 2025"

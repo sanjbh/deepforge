@@ -1,0 +1,27 @@
+# searxng-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-config
+  namespace: deepforge
+data:
+  # Main SearXNG settings
+  settings.yml: |
+    use_default_settings: true
+
+    server:
+      secret_key: "82965c8c865375c4f8407fa6af36ef567e48fe1d679e17f63a02c19d2ce5c580"
+      bind_address: "0.0.0.0:8080"
+
+    search:
+      formats:
+        - html
+        - json        # ← must explicitly enable JSON format
+
+    engines:
+      - name: google
+        disabled: false
+      - name: bing
+        disabled: false
+      - name: duckduckgo
+        disabled: false

@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deepforge
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 3        # Retry up to 3 times on failure
+  template:
+    spec:
+      restartPolicy: Never   # Don't restart the container if it finishes successfully
+      containers:
+        - name: deepforge
+          image: deepforge:0.1.0
+          imagePullPolicy: Never
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+          envFrom:
+            - configMapRef:
+                name: deepforge-config
+            - secretRef:
+                name: deepforge-secrets
