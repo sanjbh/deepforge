@@ -56,7 +56,7 @@ func (p *ResearcherPipeline) Run(ctx context.Context, query string) error {
 	results := make([]models.SearchResult, len(planner.Searches))
 
 	for i, item := range planner.Searches {
-		i, item := i, item
+		i, item := i, item // Go 1.22+: loop vars are per-iteration, no capture needed
 		g.Go(func() error {
 			result, err := p.searcher.Search(gCtx, item)
 			if err != nil {
